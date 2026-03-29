@@ -1,215 +1,140 @@
 <template>
-  <!-- Result View -->
-  <div v-if="showResult" class="mt-0">
-    <!-- nav bar section -->
-    <div class="flex justify-between items-center text-black">
-      <div class="bg-gray-700 rounded">
-        <img
-          class="w-[200px] bg-gray-700"
-          src="./assets/Black and Blue Mobile Phone Repair Logo.png"
-          alt="LOGO"
-        />
+  <div class="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+
+    <!-- FORM -->
+    <div v-if="!showResult" class="w-full max-w-xl bg-white p-6 rounded-2xl shadow space-y-4">
+
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Create Invoice</h1>
+        <p class="text-gray-500 text-sm">Simple invoice generator</p>
       </div>
-      <div class="lg:mr-20 md:mr-20">
-        <h1 class="font-bold text-[#0ace7cd8] text-[30px]">SALES</h1>
-        <p class="font-bold text-[12px]">{{ data.month }} {{ data.day }}, {{ data.year }}</p>
+
+      <div class="grid grid-cols-2 gap-3">
+        <input v-model="itemDescription" placeholder="Item name" class="input" />
+        <input v-model.number="quantity" type="number" placeholder="Qty" class="input" />
+        <input v-model.number="price" type="number" placeholder="Price" class="input" />
+        <input v-model.number="discount" type="number" placeholder="Discount" class="input" />
+      </div>
+
+      <input
+        v-model.number="paid"
+        type="number"
+        placeholder="Amount Paid"
+        class="input w-full"
+      />
+
+      <div class="flex gap-3">
+        <button @click="addItem" class="btn-green flex-1">Add Item</button>
+        <button
+          @click="submitForm"
+          :disabled="!items.length"
+          class="btn-blue flex-1 disabled:bg-gray-300"
+        >
+          Generate
+        </button>
+      </div>
+
+      <!-- PREVIEW -->
+      <div v-if="items.length" class="border-t pt-3">
+        <p class="text-sm text-gray-500 mb-2">Items</p>
+        <ul class="space-y-1 text-sm">
+          <li v-for="(item,i) in items" :key="i">
+            {{ item.description }} × {{ item.quantity }} = ${{ item.total }}
+          </li>
+        </ul>
       </div>
     </div>
 
-    <div>
-      <!-- hero section -->
-      <div class="flex justify-between items-center text-black">
-        <div class="ml-5 lg:ml-20 md:ml-20">
-          <h1 class="font-bold text-[#0ace7cd8] text-[20px]">AWOOWE ELECTRONICS</h1>
-          <p>Soobe, Abdishideeye, Somalia</p>
-          <p>0619538337</p>
+    <!-- INVOICE -->
+    <div v-else class="w-full max-w-3xl bg-white p-8 rounded-2xl shadow">
+
+      <div class="flex justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">NovaDesk</h1>
+          <p class="text-gray-500 text-sm">Invoice System</p>
         </div>
-        <div class="mr-5 lg:mr-20 md:mr-20">
-          <h1 class="font-bold text-[#0ace7cd8] text-[17px]">BILL TO</h1>
-          <p class="font-bold text-[#0ace7cd8] text-[14px]">{{ items[0]?.name }}</p>
-          <p class="font-[400]">{{ items[0]?.number }}</p>
+
+        <div class="text-right text-sm">
+          <p class="font-semibold">#INV-{{ invoiceId }}</p>
+          <p>{{ data.month }} {{ data.day }}, {{ data.year }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Items table -->
-    <div class="mt-10 ml-5 mr-5">
-      <table class="min-w-full border border-gray-300">
-        <thead>
-          <tr class="bg-teal-700 text-white text-left">
-            <th class="px-2 py-1 border-r border-white">#</th>
-            <th class="px-4 py-2 border-r border-white">Item Description</th>
-            <th class="px-4 py-2 border-r border-white">Quantity</th>
-            <th class="px-4 py-2 border-r">Price</th>
-            <th class="px-4 py-2">Total</th>
+      <div class="grid grid-cols-2 mb-6 text-sm">
+        <div>
+          <p class="text-gray-500">Bill To</p>
+          <p class="font-medium">Demo Client</p>
+          <p class="text-gray-400 text-xs">client@example.com</p>
+        </div>
+
+        <div class="text-right">
+          <p class="text-gray-500">Issued By</p>
+          <p class="font-medium">NovaDesk</p>
+          <p class="text-gray-400 text-xs">system@demo.dev</p>
+        </div>
+      </div>
+
+      <table class="w-full text-sm border-b">
+        <thead class="text-left text-gray-500">
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Total</th>
           </tr>
         </thead>
-        <tbody class="bg-white text-sm">
-          <tr v-for="(item, index) in items" :key="index" class="border-b border-gray-300">
-            <td class="px-2 py-1">{{ index + 1 }}</td>
-            <td class="px-4 py-2 font-semibold">{{ item.description }}</td>
-            <td class="px-4 py-2">{{ item.quantity }} PC</td>
-            <td class="px-4 py-2">${{ item.price }}</td>
-            <td class="px-4 py-2 text-green-700 font-semibold">${{ item.total.toFixed(2) }}</td>
+
+        <tbody>
+          <tr v-for="(item,i) in items" :key="i" class="border-t">
+            <td>{{ i+1 }}</td>
+            <td>{{ item.description }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.price.toFixed(2) }}</td>
+            <td class="font-medium">${{ item.total.toFixed(2) }}</td>
           </tr>
         </tbody>
       </table>
-    </div>
 
-    <!-- Payment Info and Summary -->
-    <div class="flex justify-between lg:mx-10 md:mx-10 ml-2 mt-6 border-b-2 border-green-300">
-      <div>
-        <h1 class="font-bold text-[#0ace7cd8] text-[17px]">Payment Info</h1>
-        <p>evc0619538337 / edhab 0629538337</p>
+      <div class="ml-auto w-64 mt-6 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span>Subtotal</span>
+          <span>${{ totalPrice.toFixed(2) }}</span>
+        </div>
 
-        <h1 class="font-bold text-[#0ace7cd8] text-[17px] mt-4">Served by</h1>
-        <p>{{ items[0]?.served }}</p>
+        <div class="flex justify-between">
+          <span>Discount</span>
+          <span>- ${{ totalDiscount.toFixed(2) }}</span>
+        </div>
 
-        <div>
-          <img
-            class="w-[200px]"
-            src="./assets/Black and Blue Mobile Phone Repair Logo.png"
-            alt="Logo"
-          />
+        <div class="flex justify-between">
+          <span>Paid</span>
+          <span>${{ paid.toFixed(2) }}</span>
+        </div>
+
+        <div class="flex justify-between font-bold text-lg">
+          <span>Balance</span>
+          <span>${{ balance.toFixed(2) }}</span>
         </div>
       </div>
 
-      <div class="w-full lg:w-auto md:w-auto sm:auto mb-4 mr-0">
-        <div class="mb-[16px]">
-          <span
-            class="bg-teal-500 font-bold text-white text-[15px] py-2 ml-5 lg:pl-4 md:pl-4 pl-[5px] lg:pr-10 md:pr-10 pr-3"
-          >
-            TOTAL AMOUNT
-          </span>
-          <span
-            class="inline-block bg-teal-400 font-bold text-white py-[6px] pl-4 w-[70px] lg:w-[140px] md:w-[140px]"
-            >${{ totalPrice.toFixed(2) }}</span
-          >
-        </div>
-
-        <div class="mb-[16px]">
-          <span
-            class="bg-teal-500 font-bold text-white text-[15px] py-2 ml-5 lg:pl-4 md:pl-4 pl-[5px] lg:pr-[82px] md:pr-[82px] pr-[50px]"
-            >DISCOUNT</span
-          >
-          <span
-            class="inline-block bg-teal-400 font-bold text-white py-[6px] pl-4 w-[70px] lg:w-[140px] md:w-[140px]"
-            >${{ totalDiscount.toFixed(2) }}</span
-          >
-        </div>
-
-        <div class="mb-[16px]">
-          <span
-            class="bg-teal-500 font-bold text-white text-[15px] py-2 ml-5 lg:pl-4 md:pl-4 pl-[5px] lg:pr-[123px] md:pr-[123px] pr-[91px]"
-            >PAID</span
-          >
-          <span
-            class="inline-block bg-teal-400 font-bold text-white py-[6px] pl-4 w-[70px] lg:w-[140px] md:w-[140px]"
-            >${{ totalPaid.toFixed(2) }}</span
-          >
-        </div>
-
-        <div>
-          <span
-            class="bg-teal-500 font-bold text-white text-[15px] py-2 ml-5 lg:pl-4 md:pl-4 pl-[5px] lg:pr-[90px] md:pr-[90px] pr-[57px]"
-            >BALANCE</span
-          >
-          <span
-            class="inline-block bg-teal-400 font-bold text-white py-[6px] pl-4 w-[70px] lg:w-[140px] md:w-[140px]"
-            >${{ totalBalance.toFixed(2) }}</span
-          >
-        </div>
+      <div class="mt-6 flex gap-3">
+        <button @click="printReceipt" class="btn-gray">Print</button>
+        <button @click="resetAll" class="btn-blue">New</button>
       </div>
-    </div>
 
-    <h1 class="font-bold text-green-700 mt-5 mb-20 ml-10">
-      Thank you {{ items[0]?.name }} for the purchase
-    </h1>
-
-    <button
-      class="print-button bg-blue-600 py-2 px-4 rounded ml-6 mb-6 text-white font-bold"
-      @click="printReceipt"
-    >
-      Print Receipt
-    </button>
-  </div>
-
-  <!-- Form View -->
-  <div v-else class="flex flex-col justify-center items-center h-screen gap-3">
-    <input
-      v-model="name"
-      type="text"
-      placeholder="Customer Name"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model="number"
-      type="number"
-      placeholder="Customer Number"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model="served"
-      type="text"
-      placeholder="Served by"
-      class="p-2 border rounded w-64"
-    />
-
-    <input
-      v-model="itemDescription"
-      type="text"
-      placeholder="Item Description"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model.number="quantity"
-      type="number"
-      placeholder="Quantity"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model.number="price"
-      type="number"
-      placeholder="Price"
-      class="p-2 border rounded w-64"
-    />
-
-    <input
-      v-model.number="discount"
-      type="number"
-      placeholder="Discount"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model.number="paid"
-      type="number"
-      placeholder="Paid"
-      class="p-2 border rounded w-64"
-    />
-    <input
-      v-model.number="balance"
-      type="number"
-      placeholder="Balance"
-      class="p-2 border rounded w-64"
-    />
-
-    <div class="flex gap-4 mt-4">
-      <button class="bg-green-600 text-white py-2 px-4 rounded" @click="addItem">
-        Add Item
-      </button>
-
-      <button class="bg-blue-600 text-white py-2 px-4 rounded" @click="submitForm">
-        Submit All
-      </button>
+      <p class="text-center text-gray-400 text-xs mt-6">
+        Demo project – portfolio ready
+      </p>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: "App",
   data() {
     const today = new Date();
+
     return {
       data: {
         month: today.toLocaleString("default", { month: "long" }),
@@ -217,88 +142,90 @@ export default {
         year: today.getFullYear(),
       },
 
+      invoiceId: Math.floor(Math.random() * 9000 + 1000),
+
       itemDescription: "",
-      name: "",
-      served: "",
-      number: null,
       quantity: null,
       price: null,
       discount: 0,
-      balance: null,
-      paid: null,
+
+      paid: 0,
+      balance: 0,
+
       items: [],
       showResult: false,
     };
   },
+
   computed: {
     totalPrice() {
-      // Sum of all items total
-      return this.items.reduce((sum, item) => sum + item.total, 0);
+      return this.items.reduce((s, i) => s + i.total, 0);
     },
     totalDiscount() {
-      return this.items.reduce((sum, item) => sum + (item.discount || 0), 0);
-    },
-    totalPaid() {
-      return this.items.reduce((sum, item) => sum + (item.paid || 0), 0);
-    },
-    totalBalance() {
-      return this.items.reduce((sum, item) => sum + (item.balance || 0), 0);
+      return this.items.reduce((s, i) => s + i.discount, 0);
     },
   },
+
+  watch: {
+    paid(val) {
+      this.balance = this.totalPrice - (val || 0);
+    },
+  },
+
   methods: {
     addItem() {
-      if (
-        !this.itemDescription ||
-        this.quantity <= 0 ||
-        this.price <= 0
-      ) {
-        alert("Please fill all fields correctly.");
-        return;
-      }
+      if (!this.itemDescription || this.quantity <= 0 || this.price <= 0) return;
 
-      const total = (this.quantity * this.price) - (this.discount || 0);
+      const total =
+        this.quantity * this.price - (this.discount || 0);
 
-      const item = {
+      this.items.push({
         description: this.itemDescription,
         quantity: this.quantity,
         price: this.price,
         discount: this.discount || 0,
-        paid: this.paid || 0,
-        balance: this.balance || 0,
-        name: this.name,
-        served: this.served,
-        total: total >= 0 ? total : 0,
-        number: this.number,
-      };
+        total: total > 0 ? total : 0,
+      });
 
-      this.items.push(item);
-
-      // clear form
       this.itemDescription = "";
       this.quantity = null;
       this.price = null;
       this.discount = 0;
-      this.paid = null;
-      this.balance = null;
-      // NOTE: Keep name, number, served as is so user doesn't retype each item
     },
+
     submitForm() {
-      if (this.items.length === 0) {
-        alert("Please add at least one item before submitting.");
-        return;
-      }
+      if (!this.items.length) return;
+
+      this.balance = this.totalPrice - (this.paid || 0);
       this.showResult = true;
     },
-    clearform() {
+
+    resetAll() {
       this.items = [];
       this.showResult = false;
-      this.name = "";
-      this.number = null;
-      this.served = "";
+      this.paid = 0;
+      this.balance = 0;
+      this.invoiceId = Math.floor(Math.random() * 9000 + 1000);
     },
+
     printReceipt() {
       window.print();
     },
   },
 };
 </script>
+
+<style>
+.input {
+  @apply border rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 outline-none;
+}
+.btn-green {
+  @apply bg-green-500 text-white px-3 rounded-lg hover:bg-green-600;
+}
+.btn-blue {
+  @apply bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-700;
+}
+.btn-gray {
+  @apply bg-gray-200 px-3 rounded-lg hover:bg-gray-300;
+}
+</style>
