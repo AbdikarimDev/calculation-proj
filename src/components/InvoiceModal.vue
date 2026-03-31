@@ -1,8 +1,8 @@
 <template>
   <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click.self="close">
     <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-auto">
-      <!-- Modal Header -->
-      <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+      <!-- Modal Header (No Print) -->
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center no-print">
         <h3 class="text-xl font-bold flex items-center gap-2">
           <component :is="DocumentTextIcon" class="w-6 h-6 text-blue-600" />
           Invoice Details
@@ -14,105 +14,98 @@
       
       <!-- Invoice Content (This is what gets printed) -->
       <div id="invoice-print-area" class="p-8">
-        <div v-if="invoice" class="space-y-6">
+        <div v-if="invoice" class="invoice-receipt">
           
           <!-- Header -->
-          <div class="flex justify-between items-start border-b pb-6">
-            <div>
-              <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                NovaPOS
-              </h1>
-              <p class="text-sm text-gray-500 mt-1">Professional Point of Sale System</p>
-            </div>
-            <div class="text-right">
-              <p class="text-2xl font-bold text-gray-800">RECEIPT</p>
-              <p class="text-sm text-gray-500 mt-1">#{{ invoice.id.slice(-8) }}</p>
-            </div>
+          <div class="text-center border-b pb-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">NovaPOS</h1>
+            <p class="text-sm text-gray-500 mt-1">Professional Point of Sale System</p>
+            <p class="text-xs text-gray-400 mt-2">123 Business Street • City, State 12345</p>
+            <p class="text-xs text-gray-400">Phone: (555) 123-4567 • Email: support@novapos.com</p>
           </div>
           
-          <!-- Store Info & Customer Info -->
-          <div class="grid grid-cols-2 gap-6 text-sm">
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <p class="font-semibold text-gray-700 mb-2">Store Information</p>
-              <p class="text-gray-600">NovaPOS System</p>
-              <p class="text-gray-600">123 Business Street</p>
-              <p class="text-gray-600">City, State 12345</p>
-              <p class="text-gray-600">Phone: (555) 123-4567</p>
-              <p class="text-gray-600">Email: support@novapos.com</p>
+          <!-- Receipt Info -->
+          <div class="flex justify-between mb-6 text-sm">
+            <div>
+              <p class="text-gray-600">Receipt #: <span class="font-semibold">#{{ invoice.id.slice(-8) }}</span></p>
+              <p class="text-gray-600 mt-1">Date: {{ formatDateTime(invoice.date) }}</p>
             </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <p class="font-semibold text-gray-700 mb-2">Customer Information</p>
-              <p class="text-gray-600">Walk-in Customer</p>
-              <p class="text-gray-600 mt-2">Date: {{ formatDateTime(invoice.date) }}</p>
-              <p class="text-gray-600">Receipt #: {{ invoice.id.slice(-8) }}</p>
+            <div>
+              <p class="text-gray-600">Cashier: NovaPOS System</p>
+              <p class="text-gray-600 mt-1">Customer: Walk-in Customer</p>
             </div>
           </div>
           
           <!-- Items Table -->
-          <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-              <thead>
-                <tr class="bg-gray-100 border-b">
-                  <th class="p-3 text-left text-sm font-semibold text-gray-700">#</th>
-                  <th class="p-3 text-left text-sm font-semibold text-gray-700">Item</th>
-                  <th class="p-3 text-right text-sm font-semibold text-gray-700">Qty</th>
-                  <th class="p-3 text-right text-sm font-semibold text-gray-700">Price</th>
-                  <th class="p-3 text-right text-sm font-semibold text-gray-700">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(item, idx) in invoice.items" :key="idx" class="border-b hover:bg-gray-50">
-                  <td class="p-3 text-sm">{{ idx + 1 }}</td>
-                  <td class="p-3 text-sm font-medium">{{ item.description }}</td>
-                  <td class="p-3 text-sm text-right">{{ item.quantity }}</td>
-                  <td class="p-3 text-sm text-right">${{ item.price.toFixed(2) }}</td>
-                  <td class="p-3 text-sm text-right font-semibold">${{ item.total.toFixed(2) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <table class="w-full mb-6">
+            <thead>
+              <tr class="border-b-2 border-gray-200">
+                <th class="py-2 text-left text-sm font-semibold text-gray-700">Item</th>
+                <th class="py-2 text-center text-sm font-semibold text-gray-700">Qty</th>
+                <th class="py-2 text-right text-sm font-semibold text-gray-700">Price</th>
+                <th class="py-2 text-right text-sm font-semibold text-gray-700">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, idx) in invoice.items" :key="idx" class="border-b border-gray-100">
+                <td class="py-2 text-sm">{{ item.description }}</td>
+                <td class="py-2 text-center text-sm">{{ item.quantity }}</td>
+                <td class="py-2 text-right text-sm">${{ item.price.toFixed(2) }}</td>
+                <td class="py-2 text-right text-sm font-semibold">${{ item.total.toFixed(2) }}</td>
+              </tr>
+            </tbody>
+          </table>
           
           <!-- Totals Section -->
-          <div class="flex justify-end">
-            <div class="w-80 space-y-2 border-t pt-4">
-              <div class="flex justify-between text-sm">
+          <div class="flex justify-end mb-6">
+            <div class="w-64">
+              <div class="flex justify-between py-1">
                 <span class="text-gray-600">Subtotal:</span>
-                <span class="font-medium">${{ (invoice.total + (invoice.discount || 0)).toFixed(2) }}</span>
+                <span class="font-medium">${{ invoice.total.toFixed(2) }}</span>
               </div>
-              <div v-if="invoice.discount > 0" class="flex justify-between text-sm text-green-600">
-                <span>Discount:</span>
-                <span>-${{ invoice.discount.toFixed(2) }}</span>
+              <div class="flex justify-between py-1 border-t border-gray-200 mt-1 pt-1">
+                <span class="font-bold">Total:</span>
+                <span class="font-bold text-lg">${{ invoice.total.toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between text-lg font-bold pt-2">
-                <span>Total:</span>
-                <span class="text-blue-600">${{ invoice.total.toFixed(2) }}</span>
+              <div class="flex justify-between py-1">
+                <span class="text-gray-600">Amount Received:</span>
+                <span class="font-medium">${{ (invoice.amountReceived || invoice.paid || 0).toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between text-sm">
-                <span>Amount Paid:</span>
-                <span class="font-medium">${{ invoice.paid.toFixed(2) }}</span>
-              </div>
-              <div class="flex justify-between text-sm font-semibold pt-2 border-t" 
-                   :class="invoice.balance >= 0 ? 'text-red-600' : 'text-green-600'">
-                <span>{{ invoice.balance >= 0 ? 'Balance Due:' : 'Change:' }}</span>
-                <span>${{ Math.abs(invoice.balance).toFixed(2) }}</span>
+              
+              <!-- Payment Status -->
+              <div class="mt-2 pt-2 border-t border-gray-200">
+                <div v-if="(invoice.amountReceived || invoice.paid || 0) > invoice.total" 
+                     class="flex justify-between text-green-600 font-semibold">
+                  <span>Change:</span>
+                  <span>${{ ((invoice.amountReceived || invoice.paid || 0) - invoice.total).toFixed(2) }}</span>
+                </div>
+                <div v-else-if="(invoice.amountReceived || invoice.paid || 0) < invoice.total" 
+                     class="flex justify-between text-red-600 font-semibold">
+                  <span>Balance Due:</span>
+                  <span>${{ (invoice.total - (invoice.amountReceived || invoice.paid || 0)).toFixed(2) }}</span>
+                </div>
+                <div v-else class="flex justify-between text-blue-600 font-semibold">
+                  <span>Status:</span>
+                  <span>PAID IN FULL</span>
+                </div>
               </div>
             </div>
           </div>
           
           <!-- Footer -->
-          <div class="border-t pt-6 text-center">
-            <p class="text-sm text-gray-500">Thank you for your business!</p>
-            <p class="text-xs text-gray-400 mt-1">This is a computer-generated receipt - No signature required</p>
+          <div class="text-center pt-6 border-t border-gray-200">
+            <p class="text-sm text-gray-600">Thank you for your business!</p>
+            <p class="text-xs text-gray-400 mt-2">This is a computer-generated receipt - No signature required</p>
             <div class="mt-4">
-              <div class="border-t-2 border-dashed border-gray-300 w-48 mx-auto"></div>
+              <div class="border-t border-dashed border-gray-300 w-32 mx-auto"></div>
               <p class="text-xs text-gray-400 mt-2">Authorized Signature</p>
             </div>
           </div>
         </div>
       </div>
       
-      <!-- Modal Footer Buttons -->
-      <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex gap-3 justify-end">
+      <!-- Modal Footer Buttons (No Print) -->
+      <div class="sticky bottom-0 bg-white border-t px-6 py-4 flex gap-3 justify-end no-print">
         <button @click="printInvoice" class="btn-print flex items-center gap-2 px-6 py-2">
           <component :is="PrinterIcon" class="w-5 h-5" />
           Print Receipt
@@ -150,6 +143,7 @@ export default {
     },
     
     formatDateTime(date) {
+      if (!date) return 'N/A'
       const d = new Date(date)
       return d.toLocaleString('en-US', { 
         year: 'numeric',
@@ -161,94 +155,264 @@ export default {
     },
     
     printInvoice() {
+      // Get the print area content
       const printContent = document.getElementById('invoice-print-area')
-      const originalTitle = document.title
+      if (!printContent) return
+      
+      // Clone the content to avoid modifying the original
+      const printClone = printContent.cloneNode(true)
       
       // Create a new window for printing
       const printWindow = window.open('', '_blank')
+      
+      // Write the print-friendly HTML
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Invoice #${this.invoice.id.slice(-8)}</title>
+          <title>Receipt #${this.invoice.id.slice(-8)}</title>
+          <meta charset="UTF-8">
           <style>
             * {
               margin: 0;
               padding: 0;
               box-sizing: border-box;
             }
+            
             body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              padding: 40px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               background: white;
               color: #1f2937;
+              font-size: 14px;
+              line-height: 1.5;
+              padding: 20px;
             }
-            .invoice-container {
-              max-width: 800px;
+            
+            .invoice-receipt {
+              max-width: 600px;
               margin: 0 auto;
+              background: white;
             }
-            .header {
+            
+            /* Header Styles */
+            .text-center {
+              text-align: center;
+            }
+            
+            .border-b {
+              border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .border-t {
+              border-top: 1px solid #e5e7eb;
+            }
+            
+            .border-dashed {
+              border-style: dashed;
+            }
+            
+            .mb-6 {
+              margin-bottom: 24px;
+            }
+            
+            .mt-1 {
+              margin-top: 4px;
+            }
+            
+            .mt-2 {
+              margin-top: 8px;
+            }
+            
+            .mt-4 {
+              margin-top: 16px;
+            }
+            
+            .pt-6 {
+              padding-top: 24px;
+            }
+            
+            .pb-6 {
+              padding-bottom: 24px;
+            }
+            
+            .py-1 {
+              padding-top: 4px;
+              padding-bottom: 4px;
+            }
+            
+            .py-2 {
+              padding-top: 8px;
+              padding-bottom: 8px;
+            }
+            
+            .px-2 {
+              padding-left: 8px;
+              padding-right: 8px;
+            }
+            
+            .flex {
               display: flex;
+            }
+            
+            .justify-between {
               justify-content: space-between;
-              align-items: start;
-              border-bottom: 2px solid #e5e7eb;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
             }
-            .store-info, .customer-info {
-              background: #f9fafb;
-              padding: 15px;
-              border-radius: 8px;
-              margin-bottom: 20px;
+            
+            .justify-end {
+              justify-content: flex-end;
             }
+            
+            .text-left {
+              text-align: left;
+            }
+            
+            .text-center {
+              text-align: center;
+            }
+            
+            .text-right {
+              text-align: right;
+            }
+            
+            .text-sm {
+              font-size: 13px;
+            }
+            
+            .text-xs {
+              font-size: 11px;
+            }
+            
+            .text-lg {
+              font-size: 18px;
+            }
+            
+            .font-semibold {
+              font-weight: 600;
+            }
+            
+            .font-bold {
+              font-weight: 700;
+            }
+            
+            .text-gray-400 {
+              color: #9ca3af;
+            }
+            
+            .text-gray-500 {
+              color: #6b7280;
+            }
+            
+            .text-gray-600 {
+              color: #4b5563;
+            }
+            
+            .text-gray-700 {
+              color: #374151;
+            }
+            
+            .text-gray-800 {
+              color: #1f2937;
+            }
+            
+            .text-blue-600 {
+              color: #2563eb;
+            }
+            
+            .text-green-600 {
+              color: #16a34a;
+            }
+            
+            .text-red-600 {
+              color: #dc2626;
+            }
+            
+            .bg-white {
+              background: white;
+            }
+            
             table {
               width: 100%;
               border-collapse: collapse;
-              margin: 20px 0;
             }
-            th {
-              background: #f3f4f6;
-              padding: 12px;
-              text-align: left;
-              font-weight: 600;
+            
+            th, td {
+              padding: 8px 0;
             }
-            td {
-              padding: 10px 12px;
+            
+            .border-b-2 {
+              border-bottom: 2px solid #e5e7eb;
+            }
+            
+            .border-b {
               border-bottom: 1px solid #e5e7eb;
             }
-            .totals {
-              text-align: right;
-              margin-top: 20px;
-            }
-            .totals div {
-              margin: 8px 0;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 40px;
-              padding-top: 20px;
+            
+            .border-t {
               border-top: 1px solid #e5e7eb;
             }
+            
+            .border-gray-100 {
+              border-color: #f3f4f6;
+            }
+            
+            .border-gray-200 {
+              border-color: #e5e7eb;
+            }
+            
+            .border-gray-300 {
+              border-color: #d1d5db;
+            }
+            
+            .w-32 {
+              width: 128px;
+            }
+            
+            .w-64 {
+              width: 256px;
+            }
+            
+            .mx-auto {
+              margin-left: auto;
+              margin-right: auto;
+            }
+            
+            .ml-auto {
+              margin-left: auto;
+            }
+            
+            /* Print-specific styles */
             @media print {
               body {
                 padding: 0;
+                margin: 0;
               }
-              button {
-                display: none;
+              
+              .invoice-receipt {
+                max-width: 100%;
+                padding: 0;
+              }
+              
+              /* Ensure borders print properly */
+              .border-b, .border-t, .border-dashed {
+                border-color: #000 !important;
               }
             }
           </style>
         </head>
         <body>
-          <div class="invoice-container">
-            ${printContent.innerHTML}
-          </div>
+          ${printClone.outerHTML}
         </body>
         </html>
       `)
+      
       printWindow.document.close()
+      printWindow.focus()
+      
+      // Print and close
       printWindow.print()
-      printWindow.close()
+      printWindow.onafterprint = () => {
+        printWindow.close()
+      }
     }
   }
 }
@@ -256,10 +420,17 @@ export default {
 
 <style scoped>
 .btn-print {
-  @apply bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium;
+  @apply bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium px-6 py-2;
 }
 
 .btn-secondary {
-  @apply bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium;
+  @apply bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium px-6 py-2;
+}
+
+/* Hide print buttons and header when printing */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
 </style>

@@ -68,19 +68,6 @@
               </div>
             </div>
             
-            <div>
-              <label class="text-sm font-medium text-gray-700 block mb-2">Amount Paid ($)</label>
-              <div class="relative">
-                <component :is="CurrencyDollarIcon" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                <input 
-                  v-model.number="paid" 
-                  type="number" 
-                  min="0" 
-                  class="input pl-8" 
-                  placeholder="0" />
-              </div>
-            </div>
-            
             <button 
               @click="addItem" 
               :disabled="!canAddItem" 
@@ -135,30 +122,99 @@
             
             <!-- Cart Summary -->
             <div v-if="items.length > 0" class="border-t mt-4 pt-4 space-y-2">
+              <!-- Subtotal -->
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Subtotal:</span>
                 <span class="font-medium">${{ totalPrice.toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between text-lg font-bold pt-2 border-t">
-                <span>Total:</span>
+              
+              <!-- Total -->
+              <div class="flex justify-between text-lg font-bold pt-1">
+                <span>Total Amount:</span>
                 <span class="text-blue-600">${{ totalPrice.toFixed(2) }}</span>
               </div>
-              <div class="flex justify-between text-sm" :class="balance >= 0 ? 'text-red-600' : 'text-green-600'">
-                <span>Balance / Change:</span>
-                <span class="font-semibold">
-                  ${{ Math.abs(balance).toFixed(2) }}
-                  <span v-if="balance < 0" class="text-xs">(Change)</span>
-                  <span v-else class="text-xs">(Due)</span>
-                </span>
+              
+              <!-- Payment Section - Only show when ready to checkout -->
+              <div class="mt-4 pt-2">
+                <label class="text-sm font-medium text-gray-700 block mb-2">
+                  Amount Received ($)
+                </label>
+                <div class="relative">
+                  <component :is="CurrencyDollarIcon" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input 
+                    v-model.number="amountReceived" 
+                    type="number" 
+                    min="0" 
+                    step="0.01"
+                    class="input pl-8" 
+                    placeholder="Enter amount customer pays" />
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Enter payment amount to see change/balance</p>
+              </div>
+              
+              <!-- Payment Status - CLEAR LOGIC -->
+              <div class="pt-2 mt-1">
+                <!-- Case 1: Customer paid MORE than total -->
+                <div v-if="amountReceived > totalPrice && amountReceived > 0" class="bg-green-50 rounded-lg p-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <component :is="CashIcon" class="w-5 h-5 text-green-600" />
+                      <span class="text-sm font-medium text-green-700">Change to Return:</span>
+                    </div>
+                    <span class="text-xl font-bold text-green-600">${{ (amountReceived - totalPrice).toFixed(2) }}</span>
+                  </div>
+                  <p class="text-xs text-green-600 mt-1">✅ Customer overpaid - Give this amount as change</p>
+                </div>
+                
+                <!-- Case 2: Customer paid LESS than total -->
+                <div v-else-if="amountReceived < totalPrice && amountReceived > 0" class="bg-red-50 rounded-lg p-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <component :is="ExclamationCircleIcon" class="w-5 h-5 text-red-600" />
+                      <span class="text-sm font-medium text-red-700">Balance Due:</span>
+                    </div>
+                    <span class="text-xl font-bold text-red-600">${{ (totalPrice - amountReceived).toFixed(2) }}</span>
+                  </div>
+                  <p class="text-xs text-red-600 mt-1">⚠️ Customer still owes this amount</p>
+                </div>
+                
+                <!-- Case 3: Customer paid EXACT amount -->
+                <div v-else-if="amountReceived === totalPrice && amountReceived > 0" class="bg-blue-50 rounded-lg p-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <component :is="CheckCircleIcon" class="w-5 h-5 text-blue-600" />
+                      <span class="text-sm font-medium text-blue-700">Payment Status:</span>
+                    </div>
+                    <span class="text-xl font-bold text-blue-600">PAID IN FULL</span>
+                  </div>
+                  <p class="text-xs text-blue-600 mt-1">✅ Exact amount received - No change needed</p>
+                </div>
+                
+                <!-- Case 4: No amount entered yet -->
+                <div v-else class="bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-2">
+                    <component :is="InformationCircleIcon" class="w-5 h-5 text-gray-500" />
+                    <span class="text-sm text-gray-600">Enter amount received to see payment status</span>
+                  </div>
+                </div>
               </div>
             </div>
             
             <button 
               @click="submitForm" 
-              :disabled="!items.length"
+              :disabled="!canCompleteSale"
               class="btn-blue w-full py-3 mt-4 text-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
               <component :is="CheckCircleIcon" class="w-5 h-5" />
               Complete Sale
+            </button>
+            
+            <!-- Clear Cart Button -->
+            <button 
+              v-if="items.length > 0"
+              @click="clearCart" 
+              class="btn-gray w-full py-2 mt-2 text-sm flex items-center justify-center gap-2">
+              <component :is="TrashIcon" class="w-4 h-4" />
+              Clear Cart
             </button>
           </div>
         </div>
@@ -179,7 +235,10 @@ import {
   PlusIcon,
   ShoppingCartIcon,
   TrashIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CashIcon,
+  ExclamationCircleIcon,
+  InformationCircleIcon
 } from '@heroicons/vue/24/outline'
 
 export default {
@@ -191,15 +250,17 @@ export default {
     PlusIcon,
     ShoppingCartIcon,
     TrashIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    CashIcon,
+    ExclamationCircleIcon,
+    InformationCircleIcon
   },
   data() {
     return {
       selectedItemName: '',
       price: 0,
       quantity: 1,
-      paid: 0,
-      balance: 0
+      amountReceived: 0
     }
   },
   computed: {
@@ -210,14 +271,15 @@ export default {
     },
     
     canAddItem() {
-      console.log('Checking canAddItem:', {
-        selectedItemName: this.selectedItemName,
-        quantity: this.quantity,
-        price: this.price
-      })
       return this.selectedItemName && this.selectedItemName !== '' && 
              this.quantity && this.quantity > 0 &&
              this.price && this.price > 0
+    },
+    
+    canCompleteSale() {
+      if (this.items.length === 0) return false
+      if (this.amountReceived <= 0) return false
+      return true
     },
     
     todaySales() {
@@ -227,40 +289,20 @@ export default {
         .reduce((sum, inv) => sum + inv.total, 0)
     }
   },
-  watch: {
-    paid(val) {
-      this.balance = this.totalPrice - (val || 0)
-    },
-    
-    // Watch for changes in selectedItemName to debug
-    selectedItemName(newVal) {
-      console.log('Selected product changed to:', newVal)
-    }
-  },
   methods: {
-    ...mapActions(usePOSStore, ['addToCart', 'removeFromCart', 'completeSale']),
+    ...mapActions(usePOSStore, ['addToCart', 'removeFromCart', 'completeSale', 'clearCart']),
     
     onSelectItem() {
-      console.log('onSelectItem called, selected:', this.selectedItemName)
       const p = this.products.find(x => x.name === this.selectedItemName)
-      console.log('Found product:', p)
       if (p) {
         this.price = p.price
         this.quantity = 1
-        console.log('Price set to:', this.price)
       } else {
         this.price = 0
       }
     },
     
     addItem() {
-      console.log('addItem called')
-      console.log('Current values:', {
-        selectedItemName: this.selectedItemName,
-        quantity: this.quantity,
-        price: this.price
-      })
-      
       if (!this.canAddItem) {
         alert('Please select a product and enter valid quantity')
         return
@@ -272,32 +314,52 @@ export default {
         return
       }
       
-      console.log('Adding item:', {
-        description: this.selectedItemName,
-        quantity: this.quantity,
-        price: this.price,
-        total: total
-      })
+      // Check if item already exists in cart
+      const existingItemIndex = this.items.findIndex(
+        item => item.description === this.selectedItemName
+      )
       
-      // Add to cart
-      this.addToCart({
-        description: this.selectedItemName,
-        quantity: this.quantity,
-        price: this.price,
-        discount: 0,
-        total: total
-      })
+      if (existingItemIndex !== -1) {
+        // Update existing item
+        const existingItem = this.items[existingItemIndex]
+        const newQuantity = existingItem.quantity + this.quantity
+        const newTotal = newQuantity * this.price
+        
+        this.items[existingItemIndex] = {
+          ...existingItem,
+          quantity: newQuantity,
+          total: newTotal
+        }
+      } else {
+        this.items.push({
+          description: this.selectedItemName,
+          quantity: this.quantity,
+          price: this.price,
+          discount: 0,
+          total: total,
+        })
+      }
       
-      // Reset form
+      // Reset product selection form
       this.selectedItemName = ''
       this.price = 0
       this.quantity = 1
       
-      console.log('Item added, cart now has:', this.items.length, 'items')
+      // Reset amount received when cart changes to prevent confusion
+      this.amountReceived = 0
     },
     
     removeItem(index) {
       this.removeFromCart(index)
+      // Reset amount received when cart changes
+      this.amountReceived = 0
+    },
+    
+    clearCart() {
+      if (confirm('Clear all items from cart?')) {
+        this.clearCart()
+        this.amountReceived = 0
+      }
     },
     
     async submitForm() {
@@ -306,30 +368,67 @@ export default {
         return
       }
       
-      if (this.paid < 0) {
-        alert('Amount paid cannot be negative')
+      if (this.amountReceived <= 0) {
+        alert('Please enter amount received from customer')
         return
       }
       
-      if (this.paid < this.totalPrice) {
-        const continueAnyway = confirm(`Amount paid ($${this.paid.toFixed(2)}) is less than total ($${this.totalPrice.toFixed(2)}). Balance due: $${(this.totalPrice - this.paid).toFixed(2)}. Continue?`)
-        if (!continueAnyway) return
+      let changeDue = 0
+      let balanceDue = 0
+      let paymentStatus = ''
+      
+      // Calculate payment status
+      if (this.amountReceived > this.totalPrice) {
+        changeDue = this.amountReceived - this.totalPrice
+        paymentStatus = 'overpaid'
+      } else if (this.amountReceived < this.totalPrice) {
+        balanceDue = this.totalPrice - this.amountReceived
+        paymentStatus = 'underpaid'
+      } else {
+        paymentStatus = 'exact'
       }
       
-      this.balance = this.totalPrice - this.paid
+      // Confirm with user if payment is insufficient
+      if (paymentStatus === 'underpaid') {
+        const confirmUnderpaid = confirm(
+          `⚠️ WARNING: Customer still owes $${balanceDue.toFixed(2)}.\n\n` +
+          `Total: $${this.totalPrice.toFixed(2)}\n` +
+          `Received: $${this.amountReceived.toFixed(2)}\n` +
+          `Balance Due: $${balanceDue.toFixed(2)}\n\n` +
+          `Continue with this transaction?`
+        )
+        if (!confirmUnderpaid) return
+      } else if (paymentStatus === 'overpaid') {
+        alert(`✅ Customer overpaid by $${changeDue.toFixed(2)}. Give this amount as change.`)
+      } else if (paymentStatus === 'exact') {
+        alert(`✅ Payment received in full. No change needed.`)
+      }
       
-      const success = await this.completeSale({
+      // Prepare invoice data
+      const invoiceData = {
         items: [...this.items],
         total: this.totalPrice,
-        paid: this.paid,
-        balance: this.balance,
+        amountReceived: this.amountReceived,
+        changeDue: changeDue,
+        balanceDue: balanceDue,
+        paymentStatus: paymentStatus,
         discount: 0
-      })
+      }
+      
+      const success = await this.completeSale(invoiceData)
       
       if (success) {
-        alert('✅ Sale completed successfully!')
-        this.paid = 0
-        this.balance = 0
+        // Show appropriate success message
+        if (paymentStatus === 'overpaid') {
+          alert(`✅ Sale completed!\n\nChange to return: $${changeDue.toFixed(2)}`)
+        } else if (paymentStatus === 'underpaid') {
+          alert(`⚠️ Sale completed with balance due: $${balanceDue.toFixed(2)}`)
+        } else {
+          alert(`✅ Sale completed successfully!`)
+        }
+        
+        // Reset all fields for next transaction
+        this.amountReceived = 0
         this.$router.push('/invoices')
       } else {
         alert('❌ Error completing sale. Please try again.')
@@ -350,5 +449,9 @@ export default {
 
 .btn-blue {
   @apply bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-gray {
+  @apply bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition;
 }
 </style>

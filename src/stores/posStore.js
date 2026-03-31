@@ -91,16 +91,19 @@ export const usePOSStore = defineStore('posStore', {
       if (existingIndex !== -1) {
         const existing = this.items[existingIndex]
         const newQuantity = existing.quantity + item.quantity
-        const newTotal = (newQuantity * item.price) - (existing.discount + item.discount)
+        const newTotal = newQuantity * item.price  // Simple calculation without discount
         
         this.items[existingIndex] = {
           ...existing,
           quantity: newQuantity,
-          discount: existing.discount + item.discount,
+          discount: 0,
           total: newTotal
         }
       } else {
-        this.items.push(item)
+        this.items.push({
+          ...item,
+          discount: 0
+        })
       }
       
       // Update stock
@@ -123,9 +126,15 @@ export const usePOSStore = defineStore('posStore', {
     
     async completeSale(saleData) {
       const invoice = {
-        ...saleData,
+        id: 'INV-' + Date.now(),
         date: new Date().toISOString(),
-        id: 'INV-' + Date.now()
+        items: saleData.items,
+        total: saleData.total,
+        amountReceived: saleData.amountReceived,
+        changeDue: saleData.changeDue,
+        balanceDue: saleData.balanceDue,
+        paymentStatus: saleData.paymentStatus,
+        discount: saleData.discount || 0
       }
       
       // Save invoice

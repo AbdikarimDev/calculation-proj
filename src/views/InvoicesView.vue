@@ -1,6 +1,6 @@
 <template>
   <div class="p-6">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         
         <!-- Header -->
@@ -29,7 +29,7 @@
                 <input 
                   v-model="searchQuery" 
                   type="text" 
-                  placeholder="Search by product name..." 
+                  placeholder="Search by product name or receipt #..." 
                   class="input pl-10"
                 />
               </div>
@@ -40,6 +40,14 @@
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
+              </select>
+            </div>
+            <div>
+              <select v-model="statusFilter" class="input">
+                <option value="all">All Status</option>
+                <option value="exact">Paid in Full</option>
+                <option value="overpaid">Overpaid</option>
+                <option value="underpaid">Balance Due</option>
               </select>
             </div>
           </div>
@@ -54,6 +62,8 @@
                 <th class="p-4 text-left text-sm font-semibold text-gray-600">Date & Time</th>
                 <th class="p-4 text-center text-sm font-semibold text-gray-600">Items</th>
                 <th class="p-4 text-right text-sm font-semibold text-gray-600">Total</th>
+                <th class="p-4 text-right text-sm font-semibold text-gray-600">Received</th>
+                <th class="p-4 text-center text-sm font-semibold text-gray-600">Status</th>
                 <th class="p-4 text-center text-sm font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
@@ -66,7 +76,21 @@
                 </td>
                 <td class="p-4 text-sm text-gray-600">{{ formatDateTime(invoice.date) }}</td>
                 <td class="p-4 text-center text-sm">{{ invoice.items.length }} items</td>
-                <td class="p-4 text-right font-bold text-blue-600 text-lg">${{ invoice.total.toFixed(2) }}</td>
+                <td class="p-4 text-right font-bold text-blue-600">${{ invoice.total.toFixed(2) }}</td>
+                <td class="p-4 text-right text-sm text-gray-600">
+                  ${{ (invoice.amountReceived || invoice.paid || 0).toFixed(2) }}
+                </td>
+                <td class="p-4 text-center">
+                  <span 
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    :class="getStatusClass(invoice)">
+                    <div 
+                      class="w-1.5 h-1.5 rounded-full"
+                      :class="getStatusDotClass(invoice)">
+                    </div>
+                    {{ getStatusText(invoice) }}
+                  </span>
+                </td>
                 <td class="p-4 text-center">
                   <button 
                     @click="viewInvoice(invoice)" 
@@ -77,7 +101,7 @@
                 </td>
               </tr>
               <tr v-if="filteredInvoices.length === 0">
-                <td colspan="5" class="p-12 text-center">
+                <td colspan="7" class="p-12 text-center">
                   <component :is="DocumentTextIcon" class="w-16 h-16 text-gray-300 mx-auto mb-3" />
                   <p class="text-gray-400 text-lg">No invoices found</p>
                   <p class="text-sm text-gray-400">Start selling to see invoices here</p>
@@ -115,6 +139,7 @@ export default {
     return {
       searchQuery: '',
       dateFilter: 'all',
+      statusFilter: 'all',
       showModal: false,
       selectedInvoice: null
     }
@@ -140,10 +165,22 @@ export default {
         filtered = filtered.filter(inv => new Date(inv.date) >= monthAgo)
       }
       
+      // Status filter
+      if (this.statusFilter !== 'all') {
+        filtered = filtered.filter(inv => {
+          const amountReceived = inv.amountReceived || inv.paid || 0
+          if (this.statusFilter === 'exact') return amountReceived === inv.total
+          if (this.statusFilter === 'overpaid') return amountReceived > inv.total
+          if (this.statusFilter === 'underpaid') return amountReceived < inv.total
+          return true
+        })
+      }
+      
       // Search filter
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()
         filtered = filtered.filter(inv => 
+          inv.id.toLowerCase().includes(query) ||
           inv.items.some(item => item.description.toLowerCase().includes(query))
         )
       }
@@ -153,6 +190,7 @@ export default {
   },
   methods: {
     formatDateTime(date) {
+      if (!date) return 'N/A'
       const d = new Date(date)
       return d.toLocaleString('en-US', { 
         month: 'short', 
@@ -161,6 +199,27 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       })
+    },
+    
+    getStatusText(invoice) {
+      const amountReceived = invoice.amountReceived || invoice.paid || 0
+      if (amountReceived > invoice.total) return 'Overpaid'
+      if (amountReceived < invoice.total) return 'Balance Due'
+      return 'Paid in Full'
+    },
+    
+    getStatusClass(invoice) {
+      const amountReceived = invoice.amountReceived || invoice.paid || 0
+      if (amountReceived > invoice.total) return 'bg-green-100 text-green-700'
+      if (amountReceived < invoice.total) return 'bg-red-100 text-red-700'
+      return 'bg-blue-100 text-blue-700'
+    },
+    
+    getStatusDotClass(invoice) {
+      const amountReceived = invoice.amountReceived || invoice.paid || 0
+      if (amountReceived > invoice.total) return 'bg-green-500'
+      if (amountReceived < invoice.total) return 'bg-red-500'
+      return 'bg-blue-500'
     },
     
     viewInvoice(invoice) {
