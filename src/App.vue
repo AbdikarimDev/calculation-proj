@@ -1,5 +1,8 @@
 <template>
-  <div class="flex min-h-screen bg-gray-100">
+  <div v-if="!isAuthenticated" class="flex min-h-screen">
+    <LoginPage @login-success="handleLoginSuccess" />
+  </div>
+  <div v-else class="flex min-h-screen bg-gray-100">
     <Sidebar />
     <main class="flex-1 overflow-auto">
       <router-view />
@@ -9,31 +12,48 @@
 
 <script>
 import Sidebar from './components/Sidebar.vue'
+import LoginPage from './views/LoginPage.vue'
 import { usePOSStore } from './stores/posStore'
+import { auth } from './firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 
 export default {
   name: 'App',
-  components: { Sidebar },
+  components: { Sidebar, LoginPage },
   data() {
     return {
-      isLoading: true
+      isLoading: true,
+      isAuthenticated: false
     }
   },
   async mounted() {
-    try {
-      const store = usePOSStore()
+    // Listen to auth state changes
+    onAuthStateChanged(auth, async (user) => {
+      this.isAuthenticated = !!user
       
-      // Load both products and invoices
-      await Promise.all([
-        store.loadProducts(),
-        store.loadInvoices()
-      ])
+      if (user) {
+        try {
+          const store = usePOSStore()
+          
+          // Load both products and invoices
+          await Promise.all([
+            store.loadProducts(),
+            store.loadInvoices()
+          ])
+          
+          console.log('Data loaded successfully for user:', user.email)
+        } catch (error) {
+          console.error('Error loading data:', error)
+        }
+      }
       
-      console.log('Data loaded successfully')
-    } catch (error) {
-      console.error('Error loading data:', error)
-    } finally {
       this.isLoading = false
+    })
+  },
+  methods: {
+    handleLoginSuccess() {
+      // This will trigger re-render due to isAuthenticated change
+      console.log('Login successful')
     }
   }
 }
