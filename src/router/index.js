@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { auth } from '../firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import POSView from '../views/POSView.vue'
 import InvoicesView from '../views/InvoicesView.vue'
 import ReportsView from '../views/ReportsView.vue'
@@ -15,8 +16,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/pos',
-    meta: { requiresAuth: true }
+    redirect: '/pos'
   },
   {
     path: '/pos',
@@ -49,23 +49,23 @@ const router = createRouter({
   routes
 })
 
-// Navigation guard for authentication
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.meta.requiresAuth !== false
-  const currentUser = auth.currentUser
+// ✅ Wait for Firebase to initialize before checking auth
+const getCurrentUser = () =>
+  new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe()
+      resolve(user)
+    })
+  })
 
-  // Update page title
+router.beforeEach(async (to) => {
   document.title = `NovaPOS | ${to.meta.title || 'Sales System'}`
 
-  if (requiresAuth && !currentUser) {
-    // Redirect to login if not authenticated
-    next('/login')
-  } else if (to.path === '/login' && currentUser) {
-    // Redirect to POS if already logged in
-    next('/pos')
-  } else {
-    next()
-  }
+  const requiresAuth = to.meta.requiresAuth !== false
+  const user = await getCurrentUser() // ✅ Waits for Firebase, not just currentUser
+
+  if (requiresAuth && !user) return '/login'
+  if (to.path === '/login' && user) return '/pos'
 })
 
 export default router
